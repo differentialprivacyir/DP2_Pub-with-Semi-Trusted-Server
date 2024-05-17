@@ -1,7 +1,7 @@
 import copy
 import numpy as np
 import pandas as pd
-from Clinet.client_class import client_class
+from Client.client_class import client_class
 from Server.PrivBayes import PrivBayes 
 from Server.Clustering import clustering 
 from Server.PRAM import PRAM
