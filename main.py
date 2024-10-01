@@ -1,5 +1,3 @@
-import copy
-import numpy as np
 import pandas as pd
 from Client.client_class import client_class
 from Server.PrivBayes import PrivBayes 

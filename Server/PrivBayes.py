@@ -10,7 +10,7 @@ from scipy.optimize import fsolve
 
 import random
 from pandas import Series, DataFrame
-from sklearn.metrics import mutual_info_score, normalized_mutual_info_score
+from sklearn.metrics import mutual_info_score
 
 """
 This module is based on PrivBayes in the following paper:
