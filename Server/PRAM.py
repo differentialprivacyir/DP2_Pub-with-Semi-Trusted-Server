@@ -23,20 +23,20 @@ class PRAM:
             e = self.epsilon * self.PBC[cluster_index]
             eps = e / len(self.clusters[cluster_index])
             p = (np.exp(eps)/(np.exp(eps)+len(self.attributes_domain.get(atr))-1))
-            q = 1-p
+            q = (1-p)/(len(self.attributes_domain.get(atr))-1)
             
-            Q.update({atr:self.firstPurturbation(self.attributes_domain.get(atr), p, q)})
+            Q.update({atr:self.Q_calculation(self.attributes_domain.get(atr), p, q)})
 
 
         ## LANDA
-        LANDA = self.calculateLanda(self.dataset)
+        LANDA = self.Landa_calculation(self.dataset)
 
         for i in LANDA.keys():
             EPI.update({i:self.estimatePI(Q.get(i),LANDA.get(i))})
         ## second step --> Q'
         SQ = dict()
         for atr in self.attributes_domain.keys():
-            SQ.update({atr:self.secondPurturbation(self.attributes_domain.get(atr), EPI.get(atr), Q.get(atr))})
+            SQ.update({atr:self.Q_bar_calculation(self.attributes_domain.get(atr), EPI.get(atr), Q.get(atr))})
 
         return self.generalized_randomize_response(self.dataset,SQ)
             
@@ -55,7 +55,7 @@ class PRAM:
         return indexx
                   
 
-    def firstPurturbation(self, domain, p, q):
+    def Q_calculation(self, domain, p, q):
         Q = []
         for d in range(len(domain)):
             attribute_Q = []
@@ -68,19 +68,19 @@ class PRAM:
         return np.array(Q)
 
     
-    def calculatePI(self, atr):
-        values, counts = np.unique(self.dataset[[atr]], return_counts=True)
-        values = list(values)
-        o_counts = list(counts)
-        atr_dict = dict()
-        for i in range(len(values)):
-            pi = o_counts[i] / len(self.dataset)
-            atr_dict.update({values[i]:pi})
-        ordered_dict = OrderedDict((key, atr_dict[key]) for key in self.attributes_domain.get(atr))
-        return dict(ordered_dict)
+    # def calculatePI(self, atr):
+    #     values, counts = np.unique(self.dataset[[atr]], return_counts=True)
+    #     values = list(values)
+    #     o_counts = list(counts)
+    #     atr_dict = dict()
+    #     for i in range(len(values)):
+    #         pi = o_counts[i] / len(self.dataset)
+    #         atr_dict.update({values[i]:pi})
+    #     ordered_dict = OrderedDict((key, atr_dict[key]) for key in self.attributes_domain.get(atr))
+    #     return dict(ordered_dict)
     
 
-    def calculateLanda(self, FPResult):
+    def Landa_calculation(self, FPResult):
         LANDA = dict()
         for atr in FPResult.columns:
             atr_dict = dict()
@@ -116,7 +116,7 @@ class PRAM:
         #print(A_row_normalized_rounded)
         return A_row_normalized_rounded
 
-    def secondPurturbation(self, domain, EPI, Q):
+    def Q_bar_calculation(self, domain, EPI, Q):
         SQ = []
         for i in range(len(domain)):
             attribute_Q = []
@@ -141,28 +141,6 @@ class PRAM:
                 Q_bar = SQ.get(column)
                 domain = self.attributes_domain.get(column)
                 iddd = domain.index(dataset[column].values[index])
-
-                # print(iddd)
-                # print("poiuytttttttttttttttttttttttttttttttttttttttttttttt")
-                # ######################################################################################################################################################################################
-                ### one method to choose randomly ---> it dosent give me a good result---> TVD > 0.3 just same as the TVD between original dataset and first purturbation
-                # rand_num = np.random.rand()
-                # cumulative_prob = np.cumsum(Q_bar[iddd])
-                # randomized_response = np.where(rand_num <= cumulative_prob)[0][0]
-                # a = self.attributes_domain.get(column)[randomized_response]
-                # dataset.loc[index, [column]] = a
-                # ######################################################################################################################################################################################
-                
-                # ######################################################################################################################################################################################
-                ### second method and it isn't good at all ----> TVD(dataset, SP) > TVD(dataset, FP)    
-                # if max(Q_bar[iddd]) >= coin :
-                #     p = min((number for number in Q_bar[iddd] if number >= coin), key=lambda x: abs(x - coin))
-                # else:
-                #     p = max(Q_bar[iddd])
-                # idd = Q_bar[iddd].index(p)
-                # dataset.loc[index, [column]] = self.attributes_domain.get(column)[idd]
-                # ######################################################################################################################################################################################
-                
                 dataset.loc[index, [column]] = np.random.choice(self.attributes_domain.get(column) , p=Q_bar[iddd])
         return dataset 
     
