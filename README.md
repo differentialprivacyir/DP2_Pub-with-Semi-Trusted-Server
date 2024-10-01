@@ -1,7 +1,7 @@
 # DP2-Pub
 
 
-![photo](/img/shape.png)
+![photo](/img/Dp2_Pub_semiTrusted.png)
 
 ### main.py
 
