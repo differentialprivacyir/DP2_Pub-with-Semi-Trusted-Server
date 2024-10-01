@@ -1,7 +1,7 @@
 # DP2-Pub
 
 
-![photo](/img/shape.png)
+![photo](/img/Dp2_Pub_semiTrusted.png)
 
 ### main.py
 
@@ -11,124 +11,45 @@
 
 ``` python
 import pandas as pd
-from data_generator.first_dataset import first_dataset
-from Client.first_perturbation import first_perturbation
-from Server.BayesianNetwork import BayesianNetwork 
+from Client.client_class import client_class
+from Server.PrivBayes import PrivBayes 
 from Server.Clustering import clustering 
-from Client.second_perturbation import second_perturbation
+from Server.PRAM import PRAM
 from Server.StatisticalAnalyses.TVD import TVD 
-from Server.StatisticalAnalyses.MSE import MSE
 ```
-سپس مشخصات مجموعه‌داده مشخص می‌شود:
-
-تعداد ویژگی‌ها:
-
-```python
-attributes_number = 100 
+سپس مجموعه‌داده و دامنه مربوطه استخراج می‌شود:
 ```
-
-اندازه دامنه هر ویژگی به صورت تصادفی از بین بازه [s_domain_number و e_domain_number] انتخاب می‌شود:
-
-```python
-s_domain_number = 100 
-e_domain_number = 150
+dataset = read_dataset()
+domains = attributes_domain()
 ```
-
-تعداد کاربران:
-
-```python
-record_number = 1000
-```
-
-با استفاده از دستور زیر کلاس first_dataset برای تولید یک مجموعه‌داده عددی صدا زده می‌شود:
-
-```python
-# generate new dataset
-f_dataset = first_dataset(attributes_number, s_domain_number, e_domain_number, record_number) 
-```
-
-### first_dataset.py
-
-در کلاس first_dataset کتابخانه‌های زیر به کار گرفته شده است:
-
-```python
-import pandas as pd
-import random
-import numpy as np
-```
-
-مقداردهی اولیه متغیرها صورت گرفته و سپس تابع dataGenerator فراخوانی می‌شود:
-
-```python
-    
-class first_dataset:
-    def __init__(self, attributes_number, s_domain_number, e_domain_number, record_number):
-        self.attributes_number = attributes_number
-        self.s_domain_number = s_domain_number
-        self.e_domain_number = e_domain_number
-        self.record_number = record_number
-        self.dataset, self.domains = self.dataGenerator()
+برای انجام عملیات مجموعه‌داده استخراج شده به لیستی از دیکشنری‌ها تبدیل می‌شود که در واقع هر سطر آن، داده‌های یک کاربر است:
 
 ```
-
-خلاصه: در این تابع مقادیر هر ویژگی برای کاربران مشخص شده و دامنه هر یک از ویژگی‌ها نیز مشخص می‌شود.
-
-جزییات: در تابع dataGenerator برای هر ویژگی یک اندازه دامنه بین s_domain_number و e_domain_number به صورت تصادفی انتخاب شده و سپس به تعداد record_number که تعداد کاربران است، عدد تصادفی بین ۱ و اندازه دامنه محاسبه شده، تولید می‌شود. همچنین دامنه‌های هر ویژگی، به متغیر atr_domain اضافه می‌شود(از این متغیر برای عملیات GRR استفاده می‌شود):
-
-```python
-   def dataGenerator(self):
-        dataSet = dict()
-        atr_domain = dict()
-        for i in range(self.attributes_number):
-            domain_number = random.randrange(self.s_domain_number, self.e_domain_number+1)
-            s = list(np.random.randint(low = 1,high=domain_number+1,size=self.record_number))
-            dataSet.update({str(i) : self.changetostring(s)})
-            ss = list(range(1, domain_number+1))
-            atr_domain.update({str(i):self.changetostring(ss)})
-        return pd.DataFrame(dataSet), atr_domain 
-
-    def changetostring(self, arr):
-        array = []
-        for ii in arr:
-            array.append(str(ii))
-        return array
-```
-
-### main.py
-
-برای راحت‌تر انجام شدن مرحله بعد، هر یک از سطرهای مجموعه داده تولیدی را به یک dict تبدیل کرده و در یک لیست ذخیره می‌کنیم:
-
-```python
-# convert each row of dataframe(dataset) to dict
 clients_dataset = []
-for index, row in f_dataset.dataset.iterrows():
+for index, row in dataset.iterrows():
     clients_dataset.append(row.to_dict())
 ```
-
-مقادیر بودجه حریم خصوصی تعیین می شود:
-
-```python
-# privacy budgets
- epsilon = 1
+بودجه حریم خصوصی مشخص می‌شود:
 ```
+epsilon = 1
+```
+
 
 
 مراحل راهکار به شرح زیر می‌باشد: 
 
 ### مرحله اول:
 
-هر یک از کاربران داده‌های خود را نوفه‌دار می‌کنند. به همین دلیل کلاس first_perturbation به ازای داده‌های هر کاربر فراخوانی شده و خروجی‌ آن که داده‌های نوفه‌دار است، به لیستی به نام clients اضافه می‌شود. و سپس لیست درست شده از داده‌های نوفه‌دار همه کاربران به dataframe تبدیل می‌شود.(این تبدیل برای این است که ورودی مرحله دوم dataframe است.)
+هر یک از کاربران داده‌های خود را نوفه‌دار می‌کنند. به همین دلیل کلاس first_perturbation به ازای داده‌های هر کاربر فراخوانی شده و خروجی‌ آن که داده‌های نوفه‌دار است، به لیستی به نام clients اضافه می‌شود. و سپس لیست ساخته شده از داده‌های نوفه‌دار همه کاربران به dataframe تبدیل می‌شود.(این تبدیل برای این است که ورودی مرحله دوم dataframe است.)
 
 ```python
     # client side
     # first perturbation
     clients = []
     for data in clients_dataset:
-        client = first_perturbation(e, f_dataset.domains, data)
+        client = first_perturbation(epsilon, domains, data)
         clients.append(client.randomized_data)
-
-    # convert list to dataframe
-    df = pd.DataFrame(clients, columns = f_dataset.dataset.columns.to_list())
+    fd = pd.DataFrame(clients, columns = dataset.columns.to_list())
 ```
 
 ### first_perturbation.py
@@ -185,7 +106,7 @@ class first_perturbation:
 ```python
         # server side
         # generate bayesian network (PrivBayes)
-        bn = BayesianNetwork(df,3)
+        bn = BayesianNetwork(fd,3)
 ```
 
 ### BayesianNetwork.py
@@ -221,10 +142,9 @@ PrivBayes: Private Data Release via Bayesian Networks.
 
 ```python
 class BayesianNetwork:
-    def __init__(self, data, k):
+    def __init__(self, data):
         self.data = data
-        self.k = k
-        self.BN = self.greedy_bayes(data, k)
+        self.BN = self.greedy_bayes(data,3)
 ```
 
 ابتدا یک ویژگی به صورت تصادفی انتخاب  و به متغیر V که لیستی از ویژگی‌های اضافه شده به شبکه بیزی در حال تولید است، اضافه می‌شود.  برای ساخت شبکه بیزی، حداکثر تعداد پدرانی که یک ویژگی می‌توانند داشته باشد با فرمول num_parents = min(len(V), k) مشخص می‌شود. سپس با فراخوانی تابع worker مجموعه پدران یک ویژگی به همراه اطلاعات متقابلی که بین آن ویژگی و مجمومه پدرانش وجود دارد، محاسبه شده و درنهایت ویژگی‌ای که اطلاعات متقابل محاسبه شده بیشتری داشته باشد، انتخاب شده و به متغیر V اضافه می شود و از لیست rest_attributes که لیست ویژگی‌های اضافه نشده به شبکه بیزی است، حذف می‌شود. اینکار را تا جایی که rest_attributes خالی شود(همه ویژگی‌ها انتخاب شوند) ادامه می‌دهیم.
@@ -484,81 +404,169 @@ class clustering():
 
 ### مرحله چهارم
 
-بعد از خوشه‌بندی و مشخص شدن درجه اهمیت هر خوشه، این اطلاعات در اختیار کاربران قرار گرفته و حال آنها می‌توانند داده‌های خود را متناسب با درجه اهمیت نوفه‌دار کنند. به همین منظور، به ازای داده‌های هر کاربر second_perturbation فراخوانی می‌شود و خروجی آنها در یک لیست ذخیره می شود:
+بعد از خوشه‌بندی و مشخص شدن درجه اهمیت هر خوشه، PRAM اعمال می‌شود
 
 ```python
-        # client side
-        # second perturbation
-        clients2 = []
-        for data in clients_dataset:
-            rr2 = second_perturbation(e, clu.clusters, clu.PBC, f_dataset.domains, data)
-            clients2.append(rr2.randomized_data)
-               
-        # convert list to dataframe
-        clients2_df = pd.DataFrame(clients2, columns = f_dataset.dataset.columns.to_list())
+P1 = PRAM(epsilon, clu.clusters, clu.PBC, domains, fd)
 ```
 
-بعد از اینکه همه کاربران داده های خود را نوفه‌دار کردند، لیست تولیدی به منظور استفاده در مرحله بعد به dataframe تبدیل می‌شود.
 
-### second_perturbation
+
+### PRAM.py
 
  در این کلاس از کتابخانه‌های زیر استفاده می‌شود:
 
 ```python
+from collections import OrderedDict
 import numpy as np
-import random
 ```
  
 بعد از مقداردهی اولیه، تابع anonymizing فراخوانی می‌شود:
 
 ```python
-class second_perturbation:
-    def __init__(self, epsilon, clusters, PBC, attributes_domain, client_data):
+def __init__(self, epsilon, clusters, PBC, attributes_domain, dataset):
         self.epsilon = epsilon
         self.clusters = clusters
         self.PBC = PBC
         self.attributes_domain = attributes_domain
-        self.client_data = client_data
-        self.randomized_data = self.anonymizing()
+        self.dataset = dataset
+        self.randomized_data = self.purturbation()
  ```
 
-در تابع anonymizing به ازای هر ویژگی مشخص می‌شود که متعلق به کدام خوشه است(با فراخوانی cluster_detection). سپس بودجه حریم خصوصی‌ای که باید به خوشه پیدا شده، اختصاص یابد محاسبه می‌شود و بودجه محاسبه شده، بین ویژگی‌های موجود در آن خوشه تقسیم می‌شود. و درنهایت p محاسبه شده و به منظور تصادفی‌سازی مقدار ویژگی، تابع generalized_randomize_response فراخوانی شده و خروجی آن در لیست perturbation_attributes ذخیره می‌شود:
-
+در تابع purturbation به ازای هر ویژگی مشخص می‌شود که متعلق به کدام خوشه است(با فراخوانی cluster_detection). سپس بودجه حریم خصوصی‌ای که باید به خوشه پیدا شده، اختصاص یابد محاسبه می‌شود و بودجه محاسبه شده، بین ویژگی‌های موجود در آن خوشه تقسیم می‌شود. و درنهایت با محاسبه p و q، ماتریس احتمالات(Q) ایجاد می‌شود. سپس Landa(λ) که توزیع احتمالات داده‌های نوفه‌دار است، محسابه می‌شود.  تخمینی از توزیع احتمالات داده‌های اصلی طبق فرمول ۴ محاسبه می‌شود. و درنهایت بعد از محاسبه 'Q محاسبه‌ عملیات تصادفی‌سازی انجام می‌گیرد.
 ```python
-    def anonymizing(self):
-        perturbation_attributes = []
-        for i in self.attributes_domain.keys():
-            cluster_index = self.cluster_detection(i)
+    def purturbation(self):
+        
+        Q = dict()
+        EPI = dict()
+        for atr in self.attributes_domain.keys():
+
+            ## first step --> Q
+            cluster_index = self.cluster_detection(atr)
             e = self.epsilon * self.PBC[cluster_index]
             eps = e / len(self.clusters[cluster_index])
-            p = np.exp(eps)/(np.exp(eps)+len(self.attributes_domain.get(i))-1)
-            # q = (1-p)/(len(self.attributes_domain.get(i))-1)
-            perturbation_attributes.append(self.generalized_randomize_response(self.client_data.get(i), self.attributes_domain.get(i), p))
-        return perturbation_attributes
+            p = (np.exp(eps)/(np.exp(eps)+len(self.attributes_domain.get(atr))-1))
+            q = (1-p)/(len(self.attributes_domain.get(atr))-1)
+            Q.update({atr:self.Q_calculation(self.attributes_domain.get(atr), p, q)})
+
+
+        ## LANDA
+        LANDA = self.calculateLanda(self.dataset)
+
+        for i in LANDA.keys():
+            EPI.update({i:self.estimatePI(Q.get(i),LANDA.get(i))})
+        ## second step --> Q'
+        SQ = dict()
+        for atr in self.attributes_domain.keys():
+            SQ.update({atr:self.Q_bar_calculation(self.attributes_domain.get(atr), EPI.get(atr), Q.get(atr))})
+
+        return self.generalized_randomize_response(self.dataset,SQ)
 ```
 
 تابع cluster_detection برای تشخیص اینکه یک ویژگی متعلق به کدام خوشه است، به‌کارگرفته می‌شود:
 
 ```python 
     def cluster_detection(self, atr):
+        p_b_c = 2
+        indexx = -1
         for cl in self.clusters:
             if atr in cl:
-                return self.clusters.index(cl)
-        return -1
+                a = self.PBC[self.clusters.index(cl)]
+                if a < p_b_c:
+                    p_b_c = a
+                    indexx = self.clusters.index(cl)
+         
+        return indexx
 ```
 
- ورودی تابع generalized_randomize_response شامل داده‌ای که قرار است تصادفی شود به همراه دامنه‌های ممکن و p است. در این تابع یک عدد تصادفی بین 0 و 1 انتخاب می‌شود و اگر کوچکتر از مقدار p باشد، داده تغییر نمی‌کند، در غیر این‌صورت از بین دامنه‌های این ویژگی یک مقدار دیگر مخالف با مقدار کنونی به صورت تصادفی انتخاب می‌شود: 
+تابع Q_calculation ماتریس Q را به ازای ویژگی ورودی محاسبه می‌کند:
+```
+    def Q_calculation(self, domain, p, q):
+        Q = []
+        for d in range(len(domain)):
+            attribute_Q = []
+            for do in range(len(domain)):
+                if d == do:
+                    attribute_Q.append(p)
+                else:
+                    attribute_Q.append(q)
+            Q.append(attribute_Q)
+        return np.array(Q)
+```
+تابع Landa_calculation:
+```
+    def Landa_calculation(self, FPResult):
+        LANDA = dict()
+        for atr in FPResult.columns:
+            atr_dict = dict()
+            for d in self.attributes_domain.get(atr):
+                counts = 0
+                for r in range(len(FPResult)):
+                    if str(FPResult.at[r,atr]) == d:
+                        counts = counts + 1
+                pi = counts / len(FPResult)
+                atr_dict.update({d:pi})
+            LANDA.update({atr:atr_dict})
 
-```python 
-    def generalized_randomize_response(self, data, data_domain, p):
-        coin = random.random()
-        if coin <= p :
-            return data
-        else:
-            return random.choice([ele for ele in data_domain if ele != data ])
-           
+        return LANDA
 ```
 
+تابع estimatePI توزیع احتمالات داده‌های اصلی را محاسبه می‌کند. matrix_inverse_normalization تابعی است که معکوس ماتریس Q را محاسبه و در صورت منفی بودن درایه‌های آن آن را نرمالایز می‌کند به صورتی که جمع همه درایه‌های یک سطر‌ و یا جمع درایه‌های یک ستون برابر با ۱ باشد
+```
+    def estimatePI(self, Q, Landa):
+        Q_inverse=self.matrix_inverse_normalization(Q)
+        L = (np.array([list(Landa.values())])).transpose()
+        estimate_pi = np.dot(Q_inverse, L)
+        return estimate_pi
+```
+
+تابع matrix_inverse_normalization:
+```
+    def matrix_inverse_normalization(self, Q):
+        Q_inverse = np.linalg.inv(Q)
+        min_value = Q_inverse.min()
+        A_shifted = Q_inverse - min_value
+        row_sums = A_shifted.sum(axis=1, keepdims=True)
+        A_row_normalized = A_shifted / row_sums
+        A_row_normalized_rounded = np.round(A_row_normalized, decimals=15)
+        return A_row_normalized_rounded
+```
+
+تابع Q_bar_calculation برای محاسبه 'Q:
+```
+    def Q_bar_calculation(self, domain, EPI, Q):
+        SQ = []
+        for i in range(len(domain)):
+            attribute_Q = []
+            for j in range(len(domain)):
+                a = EPI[j,0] * Q[j,i]
+                s = 0
+                for k in range(len(domain)):
+                    s += (EPI[k,0] * Q[k,i])
+                qbar = a / s
+                if qbar < 0:
+                    qbar = 0
+                attribute_Q.append(qbar)
+            SQ.append(attribute_Q)
+        return SQ
+```
+
+
+تابع generalized_randomize_response:
+```
+    def generalized_randomize_response(self, dataset, SQ):
+        for index in range(len(dataset)):
+            for column in dataset.columns:
+                #coin = random.random()
+                Q_bar = SQ.get(column)
+                domain = self.attributes_domain.get(column)
+                iddd = domain.index(dataset[column].values[index])
+                dataset.loc[index, [column]] = np.random.choice(self.attributes_domain.get(column) , p=Q_bar[iddd])
+        return dataset 
+    
+  
+```
+### main.py
 ### مرحله پنجم
 
 در این مرحله آزمایشات total variation distance و mean squred error انجام می‌گیرد:
@@ -568,19 +576,8 @@ class second_perturbation:
         TVD(f_dataset.dataset, clients2_df, f_dataset.domains)
 ```
 
-```python
-        # Mean squared error
-        MSE(f_dataset.dataset, clients2_df, f_dataset.domains)
-        
-```
 
 ### TVD.py
-
-در این کلاس از کتابخانه‌ زیر استفاده شده است:
-
-```python
-import numpy as np
-```
 
 بعد از مقداردهی اولیه تابع total_variation_distance به منظور محاسبه TVD فراخوانی می‌شود:
 
@@ -591,7 +588,6 @@ class TVD:
         self.perturbed_data = perturbed_data
         self.domains = domains
         self.total_variation_distance()
-
 ```
 
 فرمول و کد TVD به شرح زیر می‌باشد:
@@ -618,108 +614,12 @@ where Ω is the domain of the probability variable X and Z; PX and PZ are the pr
                         o_count = o_count + 1
                     if str(self.perturbed_data.at[r,atr]) == d:
                         p_count = p_count + 1
+                o_count = o_count / (len(self.original_data))
+                p_count = p_count / (len(self.original_data))
+
                 atvd += abs(o_count - p_count)
-            atvd = atvd * (1/2)*(1/len(self.original_data))
+            atvd = atvd * (1/2)
             tvd += atvd
         tvd = tvd * (1/len(self.domains.keys()))
         print("total variation distance = " + str(tvd))
-
-
-```
-
-از آنجایی که داده‌ ما ابعاد بالا است نتیجه را  تقسیم بر تعداد ویژگی‌ها کردیم. و چون می‌خواستیم نتیجه بین 0 و 1 باشد، آن را تقسیم بر اندازه مجموعه‌داده نیز کردیم.
-
-### MSE.py
-
-در این کلاس از کتابخانه‌ زیر استفاده شده است:
-
-```python
-import math
-```
-
-بعد از مقداردهی اولیه تابع meanـsquaredـerror به منظور محاسبه MSE فراخوانی می‌شود:
-
-```python
-class MSE:
-    def __init__(self, original_data, perturbed_data, domains):
-        self.original_data = original_data
-        self.perturbed_data = perturbed_data
-        self.domains = domains
-        self.meanـsquaredـerror()
-```
-
-فرمول و کد MSE به شرح زیر می‌باشد:
-
-![photo](/img/MSE.png)
-
-```python
-    def meanـsquaredـerror(self):
-        mse = 0 
-        for atr in self.original_data.columns:
-            pmse = 0 # attribute total variation distance
-            for d in self.domains.get(atr):
-                o_count = 0
-                p_count = 0
-                for r in range(len(self.original_data)):
-                    if str(self.original_data.at[r,atr]) == d:
-                        o_count = o_count + 1
-                    if str(self.perturbed_data.at[r,atr]) == d:
-                        p_count = p_count + 1
-                pmse += math.pow(abs(o_count - p_count), 2)
-            pmse = pmse * (1/len(self.domains.get(atr)))
-            mse += pmse
-        mse = mse * (1/len(self.domains.keys()))*(1/len(self.original_data))
-        print("Mean squared error = " + str(mse))
-```
-
-از آنجایی که داده‌ ما ابعاد بالا است نتیجه را  تقسیم بر تعداد ویژگی‌ها کردیم. و چون می‌خواستیم نتیجه بین 0 و 1 باشد، آن را تقسیم بر اندازه مجموعه‌داده نیز کردیم.
-
-## نتایج
-برای مجموعه داده با ۵۰ ویژگی(attributes_number = ۵۰) و ۱۰۰۰۰تا کاربر(record_number=۱۰۰۰۰):
-```
-epsilon = 1
-total variation distance = 0.06174800000000001
-Mean squared error = 155.74994034058594
-
-epsilon = 5
-total variation distance = 0.061768
-Mean squared error = 155.59987985096075
-
-epsilon = 10
-total variation distance = 0.061796000000000045
-Mean squared error = 155.9307110235325
-```
-
-
-برای مجموعه داده با ۵۰ ویژگی(attributes_number = ۵۰) و ۱۰۰۰تا کاربر(record_number=۱۰۰۰):
-
-```
-epsilon = 1
-total variation distance = 0.1954200000000001
-Mean squared error = 16.15927550195701
-
-epsilon = 5
-total variation distance = 0.19574000000000014
-Mean squared error = 16.189203908716156
-
-epsilon = 10
-total variation distance = 0.19506000000000018
-Mean squared error = 16.13715560631964
-```
-
-
-برای مجموعه داده با ۱۰۰ ویژگی(attributes_number = ۱۰۰) و ۱۰۰۰تا کاربر(record_number=۱۰۰۰):
-
-```
-epsilon = 1
-total variation distance = 0.19771000000000027
-Mean squared error = 15.878240591418487
-
-epsilon = 5
-total variation distance = 0.19794000000000012
-Mean squared error = 15.913670698879201
-
-epsilon = 10
-total variation distance = 0.19771000000000002
-Mean squared error = 15.928150099207397
 ```
