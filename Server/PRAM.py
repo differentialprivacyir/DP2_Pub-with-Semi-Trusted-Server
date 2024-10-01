@@ -39,15 +39,21 @@ class PRAM:
         for atr in self.attributes_domain.keys():
             SQ.update({atr:self.secondPurturbation(self.attributes_domain.get(atr), EPI.get(atr), Q.get(atr))})
 
-        self.generalized_randomize_response(self.dataset,SQ)
+        return self.generalized_randomize_response(self.dataset,SQ)
             
         
     
     def cluster_detection(self, atr):
+        p_b_c = 2
+        indexx = -1
         for cl in self.clusters:
             if atr in cl:
-                return self.clusters.index(cl)
-        return -1
+                a = self.PBC[self.clusters.index(cl)]
+                if a < p_b_c:
+                    p_b_c = a
+                    indexx = self.clusters.index(cl)
+         
+        return indexx
                   
 
     def firstPurturbation(self, domain, p, q):
@@ -78,24 +84,38 @@ class PRAM:
     def calculateLanda(self, FPResult):
         LANDA = dict()
         for atr in FPResult.columns:
-            values, counts = np.unique(FPResult[[atr]], return_counts=True)
-            values = list(values)
-            counts = list(counts)
             atr_dict = dict()
-            for i in range(len(values)):
-                pi = counts[i] / len(FPResult)
-                atr_dict.update({values[i]:pi})
-            ordered_dict = OrderedDict((key, atr_dict[key]) for key in self.attributes_domain.get(atr))
-            LANDA.update({atr:dict(ordered_dict)})
+            for d in self.attributes_domain.get(atr):
+                counts = 0
+                for r in range(len(FPResult)):
+                    if str(FPResult.at[r,atr]) == d:
+                        counts = counts + 1
+                pi = counts / len(FPResult)
+                atr_dict.update({d:pi})
+            LANDA.update({atr:atr_dict})
+
         return LANDA
+    
+  
     
 
     def estimatePI(self, Q, Landa):
-        Q_inverse = np.linalg.inv(Q)
+        Q_inverse=self.matrix_inverse_normalization(Q)
         L = (np.array([list(Landa.values())])).transpose()
         estimate_pi = np.dot(Q_inverse, L)
         return estimate_pi
     
+    def matrix_inverse_normalization(self, Q):
+        #print(Q)
+        Q_inverse = np.linalg.inv(Q)
+        #print(Q_inverse)
+        min_value = Q_inverse.min()
+        A_shifted = Q_inverse - min_value
+        row_sums = A_shifted.sum(axis=1, keepdims=True)
+        A_row_normalized = A_shifted / row_sums
+        A_row_normalized_rounded = np.round(A_row_normalized, decimals=15)
+        #print(A_row_normalized_rounded)
+        return A_row_normalized_rounded
 
     def secondPurturbation(self, domain, EPI, Q):
         SQ = []
@@ -111,21 +131,40 @@ class PRAM:
                     qbar = 0
                 attribute_Q.append(qbar)
             SQ.append(attribute_Q)
+        #print(SQ)
         return SQ
     
 
     def generalized_randomize_response(self, dataset, SQ):
         for index in range(len(dataset)):
             for column in dataset.columns:
-                coin = round(random.random(),4)
+                #coin = random.random()
                 Q_bar = SQ.get(column)
                 domain = self.attributes_domain.get(column)
                 iddd = domain.index(dataset[column].values[index])
-                print(coin)
-                print(Q_bar[iddd])
-                print("::::::::::::::::::::::")
-                p = min((number for number in Q_bar[iddd] if number >= coin), key=lambda x: abs(x - coin))
-                print(p)
-                idd = Q_bar[iddd].index(p)
-                dataset.loc[index, [column]] = self.attributes_domain.get(column)[idd]
+
+                # print(iddd)
+                # print("poiuytttttttttttttttttttttttttttttttttttttttttttttt")
+                # ######################################################################################################################################################################################
+                ### one method to choose randomly ---> it dosent give me a good result---> TVD > 0.3 just same as the TVD between original dataset and first purturbation
+                # rand_num = np.random.rand()
+                # cumulative_prob = np.cumsum(Q_bar[iddd])
+                # randomized_response = np.where(rand_num <= cumulative_prob)[0][0]
+                # a = self.attributes_domain.get(column)[randomized_response]
+                # dataset.loc[index, [column]] = a
+                # ######################################################################################################################################################################################
+                
+                # ######################################################################################################################################################################################
+                ### second method and it isn't good at all ----> TVD(dataset, SP) > TVD(dataset, FP)    
+                # if max(Q_bar[iddd]) >= coin :
+                #     p = min((number for number in Q_bar[iddd] if number >= coin), key=lambda x: abs(x - coin))
+                # else:
+                #     p = max(Q_bar[iddd])
+                # idd = Q_bar[iddd].index(p)
+                # dataset.loc[index, [column]] = self.attributes_domain.get(column)[idd]
+                # ######################################################################################################################################################################################
+                
+                dataset.loc[index, [column]] = np.random.choice(self.attributes_domain.get(column) , p=Q_bar[iddd])
         return dataset 
+    
+  
