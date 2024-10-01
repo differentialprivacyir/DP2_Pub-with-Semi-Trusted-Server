@@ -16,7 +16,7 @@ class client_class:
         eps = self.epsilon / len(self.attributes_domain.keys())
         for i in self.attributes_domain.keys():
             p = np.exp(eps)/(np.exp(eps)+len(self.attributes_domain.get(i))-1)
-            q = (1-p)/(len(self.attributes_domain.get(i))-1)
+            #q = (1-p)/(len(self.attributes_domain.get(i))-1)
             perturbation_attributes.append(self.generalized_randomize_response(self.client_data.get(i), self.attributes_domain.get(i), p))
         return perturbation_attributes
 
