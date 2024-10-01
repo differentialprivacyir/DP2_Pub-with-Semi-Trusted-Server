@@ -1,6 +1,6 @@
 import pandas as pd
-from Client.client_class import client_class
-from Server.PrivBayes import PrivBayes 
+from Client.first_perturbation import first_perturbation
+from Server.BayesianNetwork import BayesianNetwork 
 from Server.Clustering import clustering 
 from Server.PRAM import PRAM
 from Server.StatisticalAnalyses.TVD import TVD 
@@ -72,20 +72,25 @@ def attributes_domain():
 if __name__ == "__main__":
         dataset = read_dataset()
         domains = attributes_domain()
-        clients_dataset = []
 
+        clients_dataset = []
         for index, row in dataset.iterrows():
                 clients_dataset.append(row.to_dict())
 
         epsilon = 1
+        # client side
+        # first perturbation
         clients = []
         for data in clients_dataset:
-                client = client_class(epsilon, domains, data)
+                client = first_perturbation(epsilon, domains, data)
                 clients.append(client.randomized_data)
         fd = pd.DataFrame(clients, columns = dataset.columns.to_list())
         fd.to_csv("firstPerturbation.csv",index=False)
-        pb = PrivBayes(fd)
-        clu = clustering(pb.BN, domains)
+
+        # server side
+        # generate bayesian network (PrivBayes)
+        bn = BayesianNetwork(fd)
+        clu = clustering(bn.BN, domains)
 
         P1 = PRAM(epsilon, clu.clusters, clu.PBC, domains, fd)
         fp = pd.read_csv("firstPerturbation.csv")
