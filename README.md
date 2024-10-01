@@ -144,7 +144,6 @@ PrivBayes: Private Data Release via Bayesian Networks.
 class BayesianNetwork:
     def __init__(self, data):
         self.data = data
-        self.k = k
         self.BN = self.greedy_bayes(data,3)
 ```
 
