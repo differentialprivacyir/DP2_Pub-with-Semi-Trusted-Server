@@ -137,6 +137,7 @@ class PRAM:
     def generalized_randomize_response(self, dataset, SQ):
         for index in range(len(dataset)):
             for column in dataset.columns:
+                #coin = random.random()
                 Q_bar = SQ.get(column)
                 domain = self.attributes_domain.get(column)
                 iddd = domain.index(dataset[column].values[index])
